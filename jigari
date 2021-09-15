@@ -1,0 +1,134 @@
+#!/bin/bash
+
+mwvane="\e[92m"     
+dft="\e[39m"	  
+witeli="\033[0;31m"
+lurji="\e[0;36m"  
+tetri="\e[97m"
+bold="\e[1m"
+dft_bold="\e[21m"
+
+if [ -e /usr/bin/lynx ];then true;else apt install lynx -y &> /dev/null;fi
+
+
+echo -e "\n${bold}${tetri}[*] Options"
+echo -e "\n[1] Crawling"
+echo -e "\n[2] Subdomain სკანირება"
+echo -e "\n[3] SQLi სკანერი\n${dft}"
+
+echo -ne "${witeli}მო დ ულ ი => ${dft}"
+read opts
+
+tunneling () {
+
+echo "CHANGE IP"
+
+}
+
+crawl () {
+
+	echo -n "Url => "
+	read URL
+
+	dump=$(lynx -dump $URL | awk '/http/{print $2}' | sort -u | tee crawled.txt &> /dev/null)
+	
+	if [ $(cat crawled.txt | wc -l ) -eq 0 ];
+	then
+		echo -e "${witeli}[-] Url Crawling ვერ მოხერხდა${dft}"
+		rm -f crawled.txt
+	else
+		echo -e "${mwvane}Url-ები შენახულია crawled.txt-ში${dft}\n"
+	fi
+	
+
+}
+
+subfind () {
+
+
+
+echo ""
+echo -en "[1] Api / [2] BruteForce => "
+read romeli
+
+if [ $romeli -eq 1 ];
+then
+
+	echo -n "Url => "
+	read WEBSITE	
+	
+	newurl=$(echo "$WEBSITE" |sed 's/http[s]\?:\/\///')
+	
+	echo ""
+	cmd=$(curl --ssl -s 'https://spyse.com/api/data-v4/domain/search' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0' -H 'Accept: application/json, text/plain, */*' -H 'Accept-Language: en-US,en;q=0.5' --compressed -H 'Content-Type: application/json;charset=utf-8' -H 'Origin: https://spyse.com' -H 'Connection: keep-alive' -H 'Referer: https://spyse.com/target/domain/1tv.ge/subdomain-list?target=domain&search_params=%5B%7B%22name%22%3A%7B%22operator%22%3A%22ends%22,%22value%22%3A%22.1tv.ge%22%7D%7D%5D' -H 'Cookie: __cf_bm=YANdYHVzycZKB12zECj6pZq.IxDtHjDTMywTHupwnuI-1631124811-0-AX+2x9KsKnPG8+ewMtfKBxhhpB+3GHv5xz4PKvpuqylvuhJiwHNcVSAzAm7XWIu+NK2ctt4YHD3k0e/GxBetQq5Pxnu/yj5sIynBS3Hybzzrttesagwp7XYvvDCBLe3o2A==; _gcl_au=1.1.303442411.1631124814; _ga_6QKD09LPCF=GS1.1.1631124813.1.1.1631124845.0; _ga=GA1.2.649788511.1631124814; _gid=GA1.2.1880906292.1631124814; _gat_UA-120806854-16=1; _hjid=e4c8d60b-42f3-4cf6-be4e-a21843cba496; _hjFirstSeen=1; _hjAbsoluteSessionInProgress=0; __hstc=21240420.f02f4e853ba231e5dafa4ec95d764f23.1631124820971.1631124820971.1631124820971.1; hubspotutk=f02f4e853ba231e5dafa4ec95d764f23; __hssrc=1; __hssc=21240420.1.1631124820972' -H 'Sec-Fetch-Dest: empty' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Site: same-origin' -H 'TE: trailers' --data-raw '{"limit":20,"offset":0,"search_params":[{"name":{"operator":"ends","value":"'.$newurl'"}}],"query":""}' | sed '' | jq .[] | grep --color "name_without_suffix" | tr -d '",:' | awk '{print $2}')	
+
+
+	echo -e "${mwvane}$cmd ${dft}\n"
+	
+elif [ $romeli -eq 2 ];
+then
+
+	echo -n "Url => "
+	read URL
+
+	echo -n "Wordlist => "
+	read WORDLIST
+
+	for FUZZ in $(cat $WORDLIST);do
+	newurl=$(echo "$URL" |sed 's/http[s]\?:\/\///')
+	FULL_URL="http://$FUZZ.$newurl"
+	check=$(curl --ssl -s -i $FULL_URL | grep "HTTP" | grep -o '\b[0-9]\{3\}\b')
+
+	if [ -n "$check" ]
+	then
+		if [ $check -lt "404" ];then
+
+			echo -e "${mwvane}ნაპოვნია ==> $FULL_URL${dft} [$check]"
+		fi
+	fi
+	done
+
+fi
+
+
+}
+
+
+sqli () {
+
+
+curl -s "https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/master/SQL%20Injection/Intruder/SQL-Injection" >> wordlist.txt
+
+wordlist="wordlist.txt"
+
+crawl
+
+echo -e "\n${tetri}Started Error based SQL injection testing${dft}"
+for url in $(cat crawled.txt);
+do
+	while IFS= read -r FUZZ;do
+		full_url="$url$FUZZ"
+		if [[ "$(curl -s "$full_url" | grep 'on line\|SQL syntax')" ]];
+		then
+			echo -e "${witeli}კ რ ი ტ ი კ უ ლ  ი ${dft} $url$FUZZ"
+
+		fi
+		
+	done < "$wordlist"
+
+done
+}
+
+case '1' in
+
+	$opts) crawl;;
+esac
+case '2' in
+	$opts) subfind;;
+
+esac
+case '3' in 
+	$opts) sqli;;
+esac
+
+
