@@ -105,17 +105,22 @@ crawl
 
 echo -e "\n${tetri}Started Error based SQL injection testing${dft}"
 for url in $(cat crawled.txt);
-do
-	while IFS= read -r FUZZ;do
-		full_url="$url$FUZZ"
-		if [[ "$(curl -s "$full_url" | grep 'on line\|SQL syntax')" ]];
-		then
-			echo -e "${witeli}კ რ ი ტ ი კ უ ლ  ი ${dft} $url$FUZZ"
+do	
+	if [ -z $(echo "$url" | grep "$URL" | grep "index.php?") ];then
+		true
+	else
 
-		fi
+		while IFS= read -r FUZZ;do
+			full_url="$url$FUZZ"
+			echo "$full_url"
+			if [[ "$(curl -s "$full_url" | grep 'on line\|SQL syntax')" ]];
+			then
+				echo -e "${witeli}კ რ ი ტ ი კ უ ლ  ი ${dft} $url$FUZZ"
+
+			fi
 		
-	done < "$wordlist"
-
+		done < "$wordlist"
+	fi
 done
 }
 
