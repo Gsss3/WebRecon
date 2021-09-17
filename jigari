@@ -112,7 +112,7 @@ do
 
 		while IFS= read -r FUZZ;do
 			full_url="$url$FUZZ"
-			echo "$full_url"
+			#echo "$full_url"
 			if [[ "$(curl -s "$full_url" | grep 'on line\|SQL syntax')" ]];
 			then
 				echo -e "${witeli}კ რ ი ტ ი კ უ ლ  ი ${dft} $url$FUZZ"
